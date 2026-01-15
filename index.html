@@ -1,81 +1,137 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>Heart Curve</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Implicit Curve</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body {
+    html, body {
       margin: 0;
-      background: #0d0d0d;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      padding: 0;
+      background: #0b0d12;
+      overflow: hidden;
+      height: 100%;
+      font-family: "Helvetica Neue", "PingFang SC", sans-serif;
+      color: rgba(255,255,255,0.85);
     }
     canvas {
-      width: 90vmin;
-      height: 90vmin;
+      position: absolute;
+      inset: 0;
+    }
+    .text {
+      position: absolute;
+      bottom: 12%;
+      width: 100%;
+      text-align: center;
+      line-height: 1.8;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+    .show {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+<canvas id="c"></canvas>
 
-    const size = 600;
-    canvas.width = size;
-    canvas.height = size;
+<div id="text" class="text">
+  <div>在连续的世界里</div>
+  <div>有些曲线，并不是为了求解</div>
+  <br/>
+  <div>它们只是存在</div>
+  <div>像一次不着急的收敛</div>
+  <br/>
+  <div>如果你刚好看懂</div>
+  <div>那大概不是巧合</div>
+</div>
 
-    ctx.translate(size / 2, size / 2);
-    ctx.scale(1, -1);
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+resize();
 
-    let t = 0;
+window.addEventListener("resize", resize);
 
-    function heart(t) {
-      return {
-        x: 16 * Math.pow(Math.sin(t), 3),
-        y:
-          13 * Math.cos(t) -
-          5 * Math.cos(2 * t) -
-          2 * Math.cos(3 * t) -
-          Math.cos(4 * t),
-      };
-    }
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
 
-    function draw() {
-      ctx.clearRect(-size / 2, -size / 2, size, size);
-      ctx.beginPath();
+const center = { x: canvas.width / 2, y: canvas.height / 2 };
+const scale = Math.min(canvas.width, canvas.height) / 40;
 
-      for (let i = 0; i < t; i += 0.01) {
-        const p = heart(i);
-        const x = p.x * 12;
-        const y = p.y * 12;
+let particles = [];
+const COUNT = 900;
 
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
+function heart(t) {
+  return {
+    x: 16 * Math.pow(Math.sin(t), 3),
+    y:
+      13 * Math.cos(t) -
+      5 * Math.cos(2 * t) -
+      2 * Math.cos(3 * t) -
+      Math.cos(4 * t),
+  };
+}
 
-      const gradient = ctx.createLinearGradient(-200, 0, 200, 0);
-      gradient.addColorStop(0, "#ff4d4d");
-      gradient.addColorStop(1, "#ff99cc");
+// 初始化粒子
+for (let i = 0; i < COUNT; i++) {
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    tx: 0,
+    ty: 0,
+    progress: Math.random()
+  });
+}
 
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 4;
-      ctx.stroke();
+// 目标心形点
+const targets = [];
+for (let t = 0; t < Math.PI * 2; t += (Math.PI * 2) / COUNT) {
+  const p = heart(t);
+  targets.push({
+    x: center.x + p.x * scale,
+    y: center.y - p.y * scale
+  });
+}
 
-      t += 0.05;
-      if (t > Math.PI * 2) t = 0;
+// 分配目标
+particles.forEach((p, i) => {
+  const target = targets[i % targets.length];
+  p.tx = target.x;
+  p.ty = target.y;
+});
 
-      requestAnimationFrame(draw);
-    }
+let frame = 0;
 
-    draw();
-  </script>
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  frame++;
+
+  particles.forEach(p => {
+    p.x += (p.tx - p.x) * 0.03;
+    p.y += (p.ty - p.y) * 0.03;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,120,150,0.8)";
+    ctx.fill();
+  });
+
+  // 心形稳定后显示文字
+  if (frame > 220) {
+    document.getElementById("text").classList.add("show");
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
 </body>
-
 </html>
-<!-- redeploy -->
