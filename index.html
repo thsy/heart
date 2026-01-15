@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>互动数学心 - to 静静</title>
+<title>心动数学 - to 静静</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 html,body{
@@ -23,6 +23,7 @@ canvas{position:absolute; inset:0; display:block;}
   letter-spacing:0.08em;
   opacity:0;
   pointer-events:none;
+  will-change: opacity, transform;
 }
 .line{
   opacity:0;
@@ -30,6 +31,7 @@ canvas{position:absolute; inset:0; display:block;}
   transform: translateY(10px);
   text-shadow: 0 0 14px rgba(255,255,255,0.35);
   transition: all 1.5s ease;
+  will-change: transform, text-shadow;
 }
 </style>
 </head>
@@ -104,8 +106,8 @@ particles.forEach((p,i)=>{
 // 粒子颜色渐变
 function colorGradient(i){
   const r=255;
-  const g=Math.floor(120+100*Math.sin(i/50));
-  const b=Math.floor(150+100*Math.cos(i/80));
+  const g=Math.floor(120+100*Math.sin(i/50 + frame/50));
+  const b=Math.floor(150+100*Math.cos(i/80 + frame/80));
   return `rgba(${r},${g},${b},0.9)`;
 }
 
@@ -117,6 +119,27 @@ for(let i=0;i<400;i++){
 
 let frame=0;
 let outlineProgress=0; // 心形轮廓绘制进度
+let textShown=false;
+
+function showText(){
+  if(textShown) return;
+  textShown=true;
+  const textDiv=document.getElementById("text");
+  textDiv.style.opacity=1;
+  const lines=textDiv.querySelectorAll(".line");
+  lines.forEach((line,i)=>{
+    setTimeout(()=>{
+      line.style.opacity=1;
+      line.style.transform="translateY(0px)";
+      setInterval(()=>{
+        const yOffset = Math.sin(Date.now()/400 + i)*3;
+        line.style.transform=`translateY(${yOffset}px)`;
+        const glow = 0.35 + 0.2*Math.sin(Date.now()/200 + i);
+        line.style.textShadow=`0 0 14px rgba(255,255,255,${glow})`;
+      },50);
+    },i*700);
+  });
+}
 
 function animate(){
   ctx.clearRect(0,0,w,h);
@@ -158,13 +181,11 @@ function animate(){
 
     const dx=p.x-center.x;
     const dy=p.y-center.y;
-    const x2=dx;
-    const y2=dy;
     const orbitX = Math.cos(p.angle + frame*p.orbitSpeed)*2*nearCenter; 
     const orbitY = Math.sin(p.angle + frame*p.orbitSpeed)*2*nearCenter;
 
-    const rx=center.x+x2+orbitX;
-    const ry=center.y+y2+orbitY;
+    const rx=center.x+dx+orbitX;
+    const ry=center.y+dy+orbitY;
 
     const radius=p.radius*(0.8+0.4*Math.sin(frame/20+i/10));
     ctx.beginPath();
@@ -187,7 +208,7 @@ function animate(){
         ctx.moveTo(rx,ry);
         ctx.lineTo(xq,yq);
         ctx.strokeStyle='rgba(255,255,255,'+(0.1+0.2*Math.random())+')';
-        ctx.lineWidth=0.5; 
+        ctx.lineWidth=0.5;
         ctx.stroke();
       }
     }
@@ -205,21 +226,7 @@ function animate(){
 
   // 文字淡入漂浮
   if(outlineProgress>=1 && frame>50){
-    const textDiv=document.getElementById("text");
-    textDiv.style.opacity=1;
-    const lines=textDiv.querySelectorAll(".line");
-    lines.forEach((line,i)=>{
-      setTimeout(()=>{
-        line.style.opacity=1;
-        line.style.transform="translateY(0px)";
-        setInterval(()=>{
-          const yOffset = Math.sin(Date.now()/400 + i)*3*nearCenter;
-          line.style.transform=`translateY(${yOffset}px)`;
-          const glow = 0.35 + 0.2*Math.sin(Date.now()/200 + i)*nearCenter;
-          line.style.textShadow=`0 0 14px rgba(255,255,255,${glow})`;
-        },50);
-      },i*700);
-    });
+    showText();
   }
 
   requestAnimationFrame(animate);
@@ -229,4 +236,3 @@ animate();
 </script>
 </body>
 </html>
-
