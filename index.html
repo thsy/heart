@@ -2,36 +2,39 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>心动数学 - to 静静</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>互动数学的心 - to 静静</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 html,body{
   margin:0; padding:0; height:100%;
-  background:#0b0d12;
+  background: radial-gradient(circle at center,#0b0d12 0%,#1c1f29 100%);
   overflow:hidden;
   font-family:"Helvetica Neue","PingFang SC",sans-serif;
-  color: rgba(255,255,255,0.95);
+  color: rgba(255,255,255,0.9);
 }
-canvas{position:absolute; inset:0; display:block;}
+canvas{position:absolute; inset:0;}
 .text{
   position:absolute;
-  bottom:10%;
+  bottom:12%;
   width:100%;
   text-align:center;
-  line-height:1.6;
-  font-size:calc(12px + 0.5vw);
+  line-height:1.8;
+  font-size:16px;
   letter-spacing:0.08em;
-  opacity:1;  
-  pointer-events:none;
+  opacity:0;
 }
 .line{
+  opacity:0;
   display:block;
-  transform: translateY(0);
-  text-shadow: 0 0 12px rgba(255,255,255,0.35);
+  transform: translateY(10px);
+  text-shadow: 0 0 8px rgba(255,255,255,0.4);
+  transition: all 1.5s ease;
 }
 </style>
 </head>
 <body>
+
 <canvas id="c"></canvas>
 
 <div id="text" class="text">
@@ -45,96 +48,132 @@ canvas{position:absolute; inset:0; display:block;}
   <div class="line">都是给你的 — to 静静</div>
 </div>
 
+
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
 let w,h;
 resize();
 window.addEventListener("resize",resize);
-function resize(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; }
+
+function resize(){w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight;}
+
+let mouse={x:w/2,y:h/2};
+window.addEventListener("mousemove",e=>{mouse.x=e.clientX; mouse.y=e.clientY;});
+window.addEventListener("touchmove",e=>{mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; e.preventDefault();},{passive:false});
 
 const center={x:w/2,y:h/2};
 const scale=Math.min(w,h)/40;
-const COUNT=1200;
+const COUNT=1500;
 let particles=[];
 
 // 心形函数
-function heart(t){ return {x:16*Math.pow(Math.sin(t),3),y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)} }
+function heart(t){return {x:16*Math.pow(Math.sin(t),3),y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)}}
 
-// 初始化粒子
+// 初始化粒子（随机屏幕边缘 + 目标半径）
 for(let i=0;i<COUNT;i++){
-  const t = Math.random()*Math.PI*2;
-  const p = heart(t);
+  let edge=Math.floor(Math.random()*4);
+  let x,y;
+  switch(edge){
+    case 0: x=Math.random()*w; y=-10; break; // 上
+    case 1: x=Math.random()*w; y=h+10; break; // 下
+    case 2: x=-10; y=Math.random()*h; break; // 左
+    case 3: x=w+10; y=Math.random()*h; break; // 右
+  }
   particles.push({
-    x: center.x + p.x*scale + (Math.random()-0.5)*20,
-    y: center.y - p.y*scale + (Math.random()-0.5)*20,
-    tx: center.x + p.x*scale,
-    ty: center.y - p.y*scale,
+    x:x,
+    y:y,
+    tx:0,
+    ty:0,
     radius:1+Math.random()*2,
-    angle: Math.random()*Math.PI*2,
-    speed:0.01+Math.random()*0.02
+    speed:0.02+Math.random()*0.03
   });
 }
 
+// 目标心形点
+const targets=[];
+for(let t=0;t<Math.PI*2;t+=Math.PI*2/COUNT){
+  const p=heart(t);
+  targets.push({x:center.x+p.x*scale, y:center.y-p.y*scale});
+}
+
+// 分配目标
+particles.forEach((p,i)=>{
+  const target=targets[i%targets.length];
+  p.tx=target.x;
+  p.ty=target.y;
+});
+
 // 粒子颜色渐变
-function colorGradient(i,frame){
+function colorGradient(i){
   const r=255;
-  const g=Math.floor(120+80*Math.sin(i/30 + frame/50));
-  const b=Math.floor(150+80*Math.cos(i/40 + frame/50));
+  const g=Math.floor(120+100*Math.sin(i/50));
+  const b=Math.floor(150+100*Math.cos(i/80));
   return `rgba(${r},${g},${b},0.9)`;
 }
 
-let frame=0;
-
-// 文字漂浮微光
-const lines=document.querySelectorAll(".line");
-function animateText(){
-  lines.forEach((line,i)=>{
-    const yOffset = Math.sin((frame/60)+i)*3;
-    const glow = 0.35 + 0.2*Math.sin((frame/30)+i);
-    line.style.transform = `translateY(${yOffset}px)`;
-    line.style.textShadow = `0 0 14px rgba(255,255,255,${glow})`; 
-  });
-}
-
-// 背景星星
+// 背景星光
 const stars=[];
 for(let i=0;i<300;i++){
   stars.push({x:Math.random()*w,y:Math.random()*h,r:0.5+Math.random()*1.5});
 }
 
+let frame=0;
+
 function animate(){
   ctx.clearRect(0,0,w,h);
   frame++;
 
-  // 绘制星星
+  // 背景星光 + 鼠标互动微闪
   stars.forEach(s=>{
-    const alpha = 0.2 + 0.3*Math.sin(frame/50 + Math.random()*2);
+    const dx=(s.x-mouse.x)/w;
+    const dy=(s.y-mouse.y)/h;
     ctx.beginPath();
-    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+    ctx.arc(s.x+dx*20, s.y+dy*20, s.r,0,Math.PI*2);
+    ctx.fillStyle="rgba(255,255,255,"+(0.2+0.3*Math.sin(frame/50+Math.random()*2))+")";
     ctx.fill();
   });
 
-  // 绘制粒子
+  // 心旋转 + 呼吸 + 鼠标偏移
+  const angle=Math.sin(frame/180)*0.03;
+  const scaleBreathe=1+0.02*Math.sin(frame/50);
+  const offsetX=(mouse.x-center.x)*0.03;
+  const offsetY=(mouse.y-center.y)*0.03;
+
   particles.forEach((p,i)=>{
-    // 简单弹性移动到目标
-    p.x += (p.tx - p.x)*0.02;
-    p.y += (p.ty - p.y)*0.02;
+    // 粒子向目标飞行
+    p.x += (p.tx-p.x)*p.speed;
+    p.y += (p.ty-p.y)*p.speed;
 
-    const orbitX = Math.cos(p.angle+frame*p.speed)*2;
-    const orbitY = Math.sin(p.angle+frame*p.speed)*2;
+    // 旋转 + 呼吸 + 鼠标偏移
+    const dx=p.x-center.x;
+    const dy=p.y-center.y;
+    const x2=dx*Math.cos(angle)-dy*Math.sin(angle);
+    const y2=dx*Math.sin(angle)+dy*Math.cos(angle);
+    const rx=center.x+x2*scaleBreathe+offsetX;
+    const ry=center.y+y2*scaleBreathe+offsetY;
 
-    const rx = p.x + orbitX;
-    const ry = p.y + orbitY;
-
+    const radius=p.radius*(0.8+0.4*Math.sin(frame/20+i/10));
     ctx.beginPath();
-    ctx.arc(rx,ry,p.radius,0,Math.PI*2);
-    ctx.fillStyle=colorGradient(i,frame);
+    ctx.arc(rx,ry,radius,0,Math.PI*2);
+    ctx.fillStyle=colorGradient(i);
+    ctx.shadowBlur=5;
+    ctx.shadowColor='rgba(255,255,255,0.3)';
     ctx.fill();
   });
 
-  animateText();
+  // 文字淡入 + 漂浮
+  if(frame>250){
+    const textDiv=document.getElementById("text");
+    textDiv.style.opacity=1;
+    const lines=textDiv.querySelectorAll(".line");
+    lines.forEach((line,i)=>{
+      setTimeout(()=>{
+        line.style.opacity=1;
+        line.style.transform="translateY(0px)";
+      },i*700);
+    });
+  }
 
   requestAnimationFrame(animate);
 }
@@ -143,4 +182,3 @@ animate();
 </script>
 </body>
 </html>
-
