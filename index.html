@@ -93,7 +93,7 @@ function animateText(){
     const yOffset = Math.sin((frame/60)+i)*3;
     const glow = 0.35 + 0.2*Math.sin((frame/30)+i);
     line.style.transform = `translateY(${yOffset}px)`;
-    line.style.textShadow = `0 0 14px rgba(255,255,255,${glow})`;
+    line.style.textShadow = `0 0 14px rgba(255,255,255,${glow})`; 
   });
 }
 
@@ -143,3 +143,4 @@ animate();
 </script>
 </body>
 </html>
+
