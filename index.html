@@ -1,140 +1,167 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>Implicit Curve</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- 防缓存 -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+<meta charset="UTF-8">
+<title>数学的心 - to 静静</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #0b0d12;
-      overflow: hidden;
-      height: 100%;
-      font-family: "Helvetica Neue", "PingFang SC", sans-serif;
-      color: rgba(255,255,255,0.85);
-    }
-    canvas {
-      position: absolute;
-      inset: 0;
-    }
-    .text {
-      position: absolute;
-      bottom: 12%;
-      width: 100%;
-      text-align: center;
-      line-height: 1.8;
-      font-size: 16px;
-      letter-spacing: 0.08em;
-      opacity: 0;
-      transition: opacity 2s ease;
-    }
-    .show {
-      opacity: 1;
-    }
-  </style>
+<!-- 防缓存 -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+<style>
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(circle at center,#0b0d12 0%,#1c1f29 100%);
+  overflow:hidden;
+  font-family:"Helvetica Neue","PingFang SC",sans-serif;
+  color: rgba(255,255,255,0.9);
+}
+canvas{position:absolute; inset:0;}
+.text{
+  position:absolute;
+  bottom:12%;
+  width:100%;
+  text-align:center;
+  line-height:1.8;
+  font-size:16px;
+  letter-spacing:0.08em;
+  opacity:0;
+}
+.line{
+  opacity:0;
+  display:block;
+  transform: translateY(10px);
+  text-shadow: 0 0 8px rgba(255,255,255,0.4);
+  transition: all 1.5s ease;
+}
+</style>
 </head>
 <body>
 
 <canvas id="c"></canvas>
 
 <div id="text" class="text">
-  <div>在连续的世界里</div>
-  <div>有些曲线，并不是为了求解</div>
-  <br/>
-  <div>它们只是存在</div>
-  <div>像一次不着急的收敛</div>
-  <br/>
-  <div>如果你刚好看懂</div>
-  <div>那大概不是巧合</div>
+  <div class="line">在连续的世界里</div>
+  <div class="line">有些曲线，并非为求解</div>
+  <br>
+  <div class="line">它们只是存在</div>
+  <div class="line">像一次不急的收敛</div>
+  <br>
+  <div class="line">如果你刚好看懂</div>
+  <div class="line">那大概不是巧合</div>
+  <br>
+  <div class="line">— to 静静</div>
 </div>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+let w,h;
 resize();
+window.addEventListener("resize",resize);
 
-window.addEventListener("resize", resize);
+function resize(){w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight;}
 
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
-const center = { x: canvas.width / 2, y: canvas.height / 2 };
-const scale = Math.min(canvas.width, canvas.height) / 40;
-
-let particles = [];
-const COUNT = 900;
+const center={x:w/2,y:h/2};
+const scale=Math.min(w,h)/40;
+const COUNT=1500;
+let particles=[];
 
 // 心形函数
-function heart(t) {
-  return {
-    x: 16 * Math.pow(Math.sin(t), 3),
-    y:
-      13 * Math.cos(t) -
-      5 * Math.cos(2 * t) -
-      2 * Math.cos(3 * t) -
-      Math.cos(4 * t),
-  };
-}
+function heart(t){return {x:16*Math.pow(Math.sin(t),3),y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)}}
 
-// 初始化粒子
-for (let i = 0; i < COUNT; i++) {
+// 初始化粒子（随机起点 + 随机半径 + 速度）
+for(let i=0;i<COUNT;i++){
   particles.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    tx: 0,
-    ty: 0,
-    progress: Math.random()
+    x:Math.random()*w,
+    y:Math.random()*h,
+    tx:0,
+    ty:0,
+    radius:1+Math.random()*2,
+    speed:0.02+Math.random()*0.03
   });
 }
 
-// 生成目标点
-const targets = [];
-for (let t = 0; t < Math.PI * 2; t += (Math.PI * 2) / COUNT) {
-  const p = heart(t);
-  targets.push({
-    x: center.x + p.x * scale,
-    y: center.y - p.y * scale
-  });
+// 目标心形点
+const targets=[];
+for(let t=0;t<Math.PI*2;t+=Math.PI*2/COUNT){
+  const p=heart(t);
+  targets.push({x:center.x+p.x*scale, y:center.y-p.y*scale});
 }
 
 // 分配目标
-particles.forEach((p, i) => {
-  const target = targets[i % targets.length];
-  p.tx = target.x;
-  p.ty = target.y;
+particles.forEach((p,i)=>{
+  const target=targets[i%targets.length];
+  p.tx=target.x;
+  p.ty=target.y;
 });
 
-let frame = 0;
+// 粒子颜色渐变
+function colorGradient(i){
+  const r=255;
+  const g=Math.floor(120+100*Math.sin(i/50));
+  const b=Math.floor(150+100*Math.cos(i/80));
+  return `rgba(${r},${g},${b},0.9)`;
+}
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 生成星点背景
+const stars=[];
+for(let i=0;i<300;i++){
+  stars.push({x:Math.random()*w,y:Math.random()*h,r:0.5+Math.random()*1.5});
+}
 
+let frame=0;
+
+function animate(){
+  ctx.clearRect(0,0,w,h);
   frame++;
 
-  particles.forEach(p => {
-    // 粒子收敛到目标
-    p.x += (p.tx - p.x) * 0.03;
-    p.y += (p.ty - p.y) * 0.03;
-
-    // 粒子颜色和大小
+  // 背景星光
+  stars.forEach(s=>{
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,120,150,0.8)`;
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle="rgba(255,255,255,"+(0.2+0.3*Math.sin(frame/50+Math.random()*2))+")";
     ctx.fill();
   });
 
-  // 心形稳定后，文字淡入
-  if (frame > 220) {
-    document.getElementById("text").classList.add("show");
+  const angle=Math.sin(frame/180)*0.03; // 心旋转
+  const scaleBreathe=1+0.02*Math.sin(frame/50); // 心呼吸
+
+  particles.forEach((p,i)=>{
+    // 粒子向目标移动
+    p.x += (p.tx-p.x)*p.speed;
+    p.y += (p.ty-p.y)*p.speed;
+
+    // 应用旋转 + 呼吸
+    const dx=p.x-center.x;
+    const dy=p.y-center.y;
+    const x2=dx*Math.cos(angle)-dy*Math.sin(angle);
+    const y2=dx*Math.sin(angle)+dy*Math.cos(angle);
+    const rx=center.x+x2*scaleBreathe;
+    const ry=center.y+y2*scaleBreathe;
+
+    const radius=p.radius*(0.8+0.4*Math.sin(frame/20+i/10));
+    ctx.beginPath();
+    ctx.arc(rx,ry,radius,0,Math.PI*2);
+    ctx.fillStyle=colorGradient(i);
+    ctx.shadowBlur=5;
+    ctx.shadowColor='rgba(255,255,255,0.3)';
+    ctx.fill();
+  });
+
+  // 文字淡入 + 漂浮效果
+  if(frame>250){
+    const textDiv=document.getElementById("text");
+    textDiv.style.opacity=1;
+    const lines=textDiv.querySelectorAll(".line");
+    lines.forEach((line,i)=>{
+      setTimeout(()=>{
+        line.style.opacity=1;
+        line.style.transform="translateY(0px)";
+      },i*700);
+    });
   }
 
   requestAnimationFrame(animate);
@@ -142,9 +169,5 @@ function animate() {
 
 animate();
 </script>
-
 </body>
-  <!-- redeploy -->
-
 </html>
-
