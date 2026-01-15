@@ -2,13 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>数学的心 - to 静静</title>
+<title>互动数学的心 - to 静静</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- 防缓存 -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
 
 <style>
 html,body{
@@ -64,6 +59,10 @@ window.addEventListener("resize",resize);
 
 function resize(){w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight;}
 
+let mouse={x:w/2,y:h/2};
+window.addEventListener("mousemove",e=>{mouse.x=e.clientX; mouse.y=e.clientY;});
+window.addEventListener("touchmove",e=>{mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; e.preventDefault();},{passive:false});
+
 const center={x:w/2,y:h/2};
 const scale=Math.min(w,h)/40;
 const COUNT=1500;
@@ -72,11 +71,19 @@ let particles=[];
 // 心形函数
 function heart(t){return {x:16*Math.pow(Math.sin(t),3),y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)}}
 
-// 初始化粒子（随机起点 + 随机半径 + 速度）
+// 初始化粒子（随机屏幕边缘 + 目标半径）
 for(let i=0;i<COUNT;i++){
+  let edge=Math.floor(Math.random()*4);
+  let x,y;
+  switch(edge){
+    case 0: x=Math.random()*w; y=-10; break; // 上
+    case 1: x=Math.random()*w; y=h+10; break; // 下
+    case 2: x=-10; y=Math.random()*h; break; // 左
+    case 3: x=w+10; y=Math.random()*h; break; // 右
+  }
   particles.push({
-    x:Math.random()*w,
-    y:Math.random()*h,
+    x:x,
+    y:y,
     tx:0,
     ty:0,
     radius:1+Math.random()*2,
@@ -106,7 +113,7 @@ function colorGradient(i){
   return `rgba(${r},${g},${b},0.9)`;
 }
 
-// 生成星点背景
+// 背景星光
 const stars=[];
 for(let i=0;i<300;i++){
   stars.push({x:Math.random()*w,y:Math.random()*h,r:0.5+Math.random()*1.5});
@@ -118,29 +125,34 @@ function animate(){
   ctx.clearRect(0,0,w,h);
   frame++;
 
-  // 背景星光
+  // 背景星光 + 鼠标互动微闪
   stars.forEach(s=>{
+    const dx=(s.x-mouse.x)/w;
+    const dy=(s.y-mouse.y)/h;
     ctx.beginPath();
-    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.arc(s.x+dx*20, s.y+dy*20, s.r,0,Math.PI*2);
     ctx.fillStyle="rgba(255,255,255,"+(0.2+0.3*Math.sin(frame/50+Math.random()*2))+")";
     ctx.fill();
   });
 
-  const angle=Math.sin(frame/180)*0.03; // 心旋转
-  const scaleBreathe=1+0.02*Math.sin(frame/50); // 心呼吸
+  // 心旋转 + 呼吸 + 鼠标偏移
+  const angle=Math.sin(frame/180)*0.03;
+  const scaleBreathe=1+0.02*Math.sin(frame/50);
+  const offsetX=(mouse.x-center.x)*0.03;
+  const offsetY=(mouse.y-center.y)*0.03;
 
   particles.forEach((p,i)=>{
-    // 粒子向目标移动
+    // 粒子向目标飞行
     p.x += (p.tx-p.x)*p.speed;
     p.y += (p.ty-p.y)*p.speed;
 
-    // 应用旋转 + 呼吸
+    // 旋转 + 呼吸 + 鼠标偏移
     const dx=p.x-center.x;
     const dy=p.y-center.y;
     const x2=dx*Math.cos(angle)-dy*Math.sin(angle);
     const y2=dx*Math.sin(angle)+dy*Math.cos(angle);
-    const rx=center.x+x2*scaleBreathe;
-    const ry=center.y+y2*scaleBreathe;
+    const rx=center.x+x2*scaleBreathe+offsetX;
+    const ry=center.y+y2*scaleBreathe+offsetY;
 
     const radius=p.radius*(0.8+0.4*Math.sin(frame/20+i/10));
     ctx.beginPath();
@@ -151,7 +163,7 @@ function animate(){
     ctx.fill();
   });
 
-  // 文字淡入 + 漂浮效果
+  // 文字淡入 + 漂浮
   if(frame>250){
     const textDiv=document.getElementById("text");
     textDiv.style.opacity=1;
