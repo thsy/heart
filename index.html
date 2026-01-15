@@ -2,9 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>互动数学的心 - to 静静</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>互动数学心 - to 静静</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 html,body{
   margin:0; padding:0; height:100%;
@@ -13,41 +12,39 @@ html,body{
   font-family:"Helvetica Neue","PingFang SC",sans-serif;
   color: rgba(255,255,255,0.9);
 }
-canvas{position:absolute; inset:0;}
+canvas{position:absolute; inset:0; display:block;}
 .text{
   position:absolute;
   bottom:12%;
   width:100%;
   text-align:center;
-  line-height:1.8;
-  font-size:16px;
+  line-height:1.6;
+  font-size:calc(12px + 0.5vw);
   letter-spacing:0.08em;
   opacity:0;
+  pointer-events:none;
 }
 .line{
   opacity:0;
   display:block;
   transform: translateY(10px);
-  text-shadow: 0 0 8px rgba(255,255,255,0.4);
+  text-shadow: 0 0 14px rgba(255,255,255,0.35);
   transition: all 1.5s ease;
 }
 </style>
 </head>
 <body>
-
 <canvas id="c"></canvas>
 
 <div id="text" class="text">
-  <div class="line">在连续的世界里</div>
-  <div class="line">有些曲线，并非为求解</div>
-  <br>
-  <div class="line">它们只是存在</div>
-  <div class="line">像一次不急的收敛</div>
-  <br>
-  <div class="line">如果你刚好看懂</div>
-  <div class="line">那大概不是巧合</div>
-  <br>
-  <div class="line">— to 静静</div>
+  <div class="line">在无穷的小数点里</div>
+  <div class="line">有些曲线悄悄蜿蜒</div>
+  <div class="line">不为求解，只为呼吸</div>
+  <div class="line">像轻轻靠近的极限</div>
+  <div class="line">若你正好懂得它的节奏</div>
+  <div class="line">那一定不是巧合</div>
+  <div class="line">每一个点，每一次光晕</div>
+  <div class="line">都是给你的 — to 静静</div>
 </div>
 
 <script>
@@ -56,12 +53,11 @@ const ctx=canvas.getContext("2d");
 let w,h;
 resize();
 window.addEventListener("resize",resize);
-
 function resize(){w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight;}
 
-let mouse={x:w/2,y:h/2};
-window.addEventListener("mousemove",e=>{mouse.x=e.clientX; mouse.y=e.clientY;});
-window.addEventListener("touchmove",e=>{mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; e.preventDefault();},{passive:false});
+let pointer={x:w/2,y:h/2};
+window.addEventListener("mousemove",e=>{pointer.x=e.clientX; pointer.y=e.clientY;});
+window.addEventListener("touchmove",e=>{pointer.x=e.touches[0].clientX; pointer.y=e.touches[0].clientY; e.preventDefault();},{passive:false});
 
 const center={x:w/2,y:h/2};
 const scale=Math.min(w,h)/40;
@@ -71,34 +67,34 @@ let particles=[];
 // 心形函数
 function heart(t){return {x:16*Math.pow(Math.sin(t),3),y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)}}
 
-// 初始化粒子（随机屏幕边缘 + 目标半径）
+// 初始化粒子
 for(let i=0;i<COUNT;i++){
   let edge=Math.floor(Math.random()*4);
   let x,y;
   switch(edge){
-    case 0: x=Math.random()*w; y=-10; break; // 上
-    case 1: x=Math.random()*w; y=h+10; break; // 下
-    case 2: x=-10; y=Math.random()*h; break; // 左
-    case 3: x=w+10; y=Math.random()*h; break; // 右
+    case 0: x=Math.random()*w; y=-10; break;
+    case 1: x=Math.random()*w; y=h+10; break;
+    case 2: x=-10; y=Math.random()*h; break;
+    case 3: x=w+10; y=Math.random()*h; break;
   }
   particles.push({
-    x:x,
-    y:y,
-    tx:0,
-    ty:0,
+    x:x, y:y,
+    tx:0, ty:0,
+    angle: Math.random()*Math.PI*2,
     radius:1+Math.random()*2,
-    speed:0.02+Math.random()*0.03
+    speed:0.02+Math.random()*0.03,
+    orbitSpeed:0.002+Math.random()*0.003
   });
 }
 
-// 目标心形点
+// 心形目标点
 const targets=[];
 for(let t=0;t<Math.PI*2;t+=Math.PI*2/COUNT){
   const p=heart(t);
   targets.push({x:center.x+p.x*scale, y:center.y-p.y*scale});
 }
 
-// 分配目标
+// 分配目标点
 particles.forEach((p,i)=>{
   const target=targets[i%targets.length];
   p.tx=target.x;
@@ -115,56 +111,100 @@ function colorGradient(i){
 
 // 背景星光
 const stars=[];
-for(let i=0;i<300;i++){
-  stars.push({x:Math.random()*w,y:Math.random()*h,r:0.5+Math.random()*1.5});
+for(let i=0;i<400;i++){
+  stars.push({x:Math.random()*w,y:Math.random()*h,r:0.5+Math.random()*2});
 }
 
 let frame=0;
+let outlineProgress=0; // 心形轮廓绘制进度
 
 function animate(){
   ctx.clearRect(0,0,w,h);
   frame++;
 
-  // 背景星光 + 鼠标互动微闪
+  // 背景星光
   stars.forEach(s=>{
-    const dx=(s.x-mouse.x)/w;
-    const dy=(s.y-mouse.y)/h;
+    const dx=(s.x-pointer.x)/w;
+    const dy=(s.y-pointer.y)/h;
     ctx.beginPath();
     ctx.arc(s.x+dx*20, s.y+dy*20, s.r,0,Math.PI*2);
     ctx.fillStyle="rgba(255,255,255,"+(0.2+0.3*Math.sin(frame/50+Math.random()*2))+")";
     ctx.fill();
   });
 
-  // 心旋转 + 呼吸 + 鼠标偏移
-  const angle=Math.sin(frame/180)*0.03;
-  const scaleBreathe=1+0.02*Math.sin(frame/50);
-  const offsetX=(mouse.x-center.x)*0.03;
-  const offsetY=(mouse.y-center.y)*0.03;
+  // 彩蛋靠近中心
+  const distToCenter = Math.hypot(pointer.x-center.x, pointer.y-center.y);
+  const nearCenter = distToCenter < 150 ? 1.6 : 1;
 
+  // 绘制心形轮廓
+  ctx.beginPath();
+  const totalPoints = Math.floor(COUNT*outlineProgress);
+  for(let i=0;i<totalPoints;i++){
+    const p=targets[i];
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.lineTo(p.x,p.y);
+  }
+  ctx.strokeStyle='rgba(255,255,255,'+(0.6+0.4*Math.sin(frame/20))+')';
+  ctx.lineWidth=2;
+  ctx.shadowBlur=10;
+  ctx.shadowColor='rgba(255,255,255,0.3)';
+  ctx.stroke();
+  if(outlineProgress<1) outlineProgress += 0.002;
+
+  // 粒子动态
   particles.forEach((p,i)=>{
-    // 粒子向目标飞行
-    p.x += (p.tx-p.x)*p.speed;
-    p.y += (p.ty-p.y)*p.speed;
+    p.x += (p.tx-p.x)*p.speed*nearCenter;
+    p.y += (p.ty-p.y)*p.speed*nearCenter;
 
-    // 旋转 + 呼吸 + 鼠标偏移
     const dx=p.x-center.x;
     const dy=p.y-center.y;
-    const x2=dx*Math.cos(angle)-dy*Math.sin(angle);
-    const y2=dx*Math.sin(angle)+dy*Math.cos(angle);
-    const rx=center.x+x2*scaleBreathe+offsetX;
-    const ry=center.y+y2*scaleBreathe+offsetY;
+    const x2=dx;
+    const y2=dy;
+    const orbitX = Math.cos(p.angle + frame*p.orbitSpeed)*2*nearCenter; 
+    const orbitY = Math.sin(p.angle + frame*p.orbitSpeed)*2*nearCenter;
+
+    const rx=center.x+x2+orbitX;
+    const ry=center.y+y2+orbitY;
 
     const radius=p.radius*(0.8+0.4*Math.sin(frame/20+i/10));
     ctx.beginPath();
     ctx.arc(rx,ry,radius,0,Math.PI*2);
     ctx.fillStyle=colorGradient(i);
-    ctx.shadowBlur=5;
-    ctx.shadowColor='rgba(255,255,255,0.3)';
+    ctx.shadowBlur=6;
+    ctx.shadowColor='rgba(255,255,255,0.4)';
     ctx.fill();
+
+    // 粒子连线
+    for(let j=i+1;j<i+4 && j<particles.length;j++){
+      const q=particles[j];
+      const dx2=q.x-center.x;
+      const dy2=q.y-center.y;
+      const xq=center.x+dx2;
+      const yq=center.y+dy2;
+      const dist=Math.hypot(rx-xq, ry-yq);
+      if(dist<20){
+        ctx.beginPath();
+        ctx.moveTo(rx,ry);
+        ctx.lineTo(xq,yq);
+        ctx.strokeStyle='rgba(255,255,255,'+(0.1+0.2*Math.random())+')';
+        ctx.lineWidth=0.5;
+        ctx.stroke();
+      }
+    }
   });
 
-  // 文字淡入 + 漂浮
-  if(frame>250){
+  // 心形脉冲光晕
+  const pulseRadius = Math.sin(frame/40)*40 + 80;
+  const gradient = ctx.createRadialGradient(center.x,center.y,0,center.x,center.y,pulseRadius*nearCenter);
+  gradient.addColorStop(0,'rgba(255,255,255,0.05)');
+  gradient.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(center.x,center.y,pulseRadius*nearCenter,0,Math.PI*2);
+  ctx.fillStyle=gradient;
+  ctx.fill();
+
+  // 文字淡入漂浮
+  if(outlineProgress>=1 && frame>50){
     const textDiv=document.getElementById("text");
     textDiv.style.opacity=1;
     const lines=textDiv.querySelectorAll(".line");
@@ -172,6 +212,12 @@ function animate(){
       setTimeout(()=>{
         line.style.opacity=1;
         line.style.transform="translateY(0px)";
+        setInterval(()=>{
+          const yOffset = Math.sin(Date.now()/400 + i)*3*nearCenter;
+          line.style.transform=`translateY(${yOffset}px)`;
+          const glow = 0.35 + 0.2*Math.sin(Date.now()/200 + i)*nearCenter;
+          line.style.textShadow=`0 0 14px rgba(255,255,255,${glow})`;
+        },50);
       },i*700);
     });
   }
