@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <title>Implicit Curve</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- 防缓存 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <style>
     html, body {
       margin: 0;
@@ -67,6 +73,7 @@ const scale = Math.min(canvas.width, canvas.height) / 40;
 let particles = [];
 const COUNT = 900;
 
+// 心形函数
 function heart(t) {
   return {
     x: 16 * Math.pow(Math.sin(t), 3),
@@ -89,7 +96,7 @@ for (let i = 0; i < COUNT; i++) {
   });
 }
 
-// 目标心形点
+// 生成目标点
 const targets = [];
 for (let t = 0; t < Math.PI * 2; t += (Math.PI * 2) / COUNT) {
   const p = heart(t);
@@ -114,16 +121,18 @@ function animate() {
   frame++;
 
   particles.forEach(p => {
+    // 粒子收敛到目标
     p.x += (p.tx - p.x) * 0.03;
     p.y += (p.ty - p.y) * 0.03;
 
+    // 粒子颜色和大小
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,120,150,0.8)";
+    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,120,150,0.8)`;
     ctx.fill();
   });
 
-  // 心形稳定后显示文字
+  // 心形稳定后，文字淡入
   if (frame > 220) {
     document.getElementById("text").classList.add("show");
   }
@@ -133,7 +142,6 @@ function animate() {
 
 animate();
 </script>
+
 </body>
 </html>
-<!-- force redeploy -->
-
